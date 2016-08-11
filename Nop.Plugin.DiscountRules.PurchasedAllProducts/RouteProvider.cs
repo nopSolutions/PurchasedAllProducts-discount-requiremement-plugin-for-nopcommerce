@@ -6,6 +6,8 @@ namespace Nop.Plugin.DiscountRules.PurchasedAllProducts
 {
     public partial class RouteProvider : IRouteProvider
     {
+        #region Methods
+
         public void RegisterRoutes(RouteCollection routes)
         {
             routes.MapRoute("Plugin.DiscountRules.PurchasedAllProducts.Configure",
@@ -14,6 +16,11 @@ namespace Nop.Plugin.DiscountRules.PurchasedAllProducts
                  new[] { "Nop.Plugin.DiscountRules.PurchasedAllProducts.Controllers" }
             );
         }
+
+        #endregion
+
+        #region Properties
+
         public int Priority
         {
             get
@@ -21,5 +28,7 @@ namespace Nop.Plugin.DiscountRules.PurchasedAllProducts
                 return 0;
             }
         }
+
+        #endregion
     }
 }

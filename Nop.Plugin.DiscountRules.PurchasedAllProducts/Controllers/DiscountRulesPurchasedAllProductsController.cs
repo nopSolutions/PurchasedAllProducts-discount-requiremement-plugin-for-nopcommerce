@@ -14,17 +14,28 @@ namespace Nop.Plugin.DiscountRules.PurchasedAllProducts.Controllers
     [AdminAuthorize]
     public class DiscountRulesPurchasedAllProductsController : BasePluginController
     {
+        #region Fields
+
         private readonly IDiscountService _discountService;
         private readonly ISettingService _settingService;
         private readonly IPermissionService _permissionService;
 
+        #endregion
+
+        #region Ctor
+
         public DiscountRulesPurchasedAllProductsController(IDiscountService discountService,
-            ISettingService settingService, IPermissionService permissionService)
+            ISettingService settingService, 
+            IPermissionService permissionService)
         {
             this._discountService = discountService;
             this._settingService = settingService;
             this._permissionService = permissionService;
         }
+
+        #endregion
+
+        #region Methods
 
         public ActionResult Configure(int discountId, int? discountRequirementId)
         {
@@ -32,23 +43,26 @@ namespace Nop.Plugin.DiscountRules.PurchasedAllProducts.Controllers
                 return Content("Access denied");
 
             var discount = _discountService.GetDiscountById(discountId);
+
             if (discount == null)
                 throw new ArgumentException("Discount could not be loaded");
 
-            DiscountRequirement discountRequirement = null;
             if (discountRequirementId.HasValue)
             {
-                discountRequirement = discount.DiscountRequirements.FirstOrDefault(dr => dr.Id == discountRequirementId.Value);
+                var discountRequirement = discount.DiscountRequirements.FirstOrDefault(dr => dr.Id == discountRequirementId.Value);
+
                 if (discountRequirement == null)
                     return Content("Failed to load requirement.");
             }
 
             var restrictedProductVariantIds = _settingService.GetSettingByKey<string>(string.Format("DiscountRequirement.RestrictedProductVariantIds-{0}", discountRequirementId.HasValue ? discountRequirementId.Value : 0));
-            
-            var model = new RequirementModel();
-            model.RequirementId = discountRequirementId.HasValue ? discountRequirementId.Value : 0;
-            model.DiscountId = discountId;
-            model.ProductVariants = restrictedProductVariantIds;
+
+            var model = new RequirementModel
+            {
+                RequirementId = discountRequirementId.HasValue ? discountRequirementId.Value : 0,
+                DiscountId = discountId,
+                ProductVariants = restrictedProductVariantIds
+            };
 
             //add a prefix
             ViewData.TemplateInfo.HtmlFieldPrefix = string.Format("DiscountRulesPurchasedAllProducts{0}", discountRequirementId.HasValue ? discountRequirementId.Value.ToString() : "0");
@@ -64,10 +78,12 @@ namespace Nop.Plugin.DiscountRules.PurchasedAllProducts.Controllers
                 return Content("Access denied");
 
             var discount = _discountService.GetDiscountById(discountId);
+
             if (discount == null)
                 throw new ArgumentException("Discount could not be loaded");
 
             DiscountRequirement discountRequirement = null;
+
             if (discountRequirementId.HasValue)
                 discountRequirement = discount.DiscountRequirements.FirstOrDefault(dr => dr.Id == discountRequirementId.Value);
 
@@ -83,13 +99,16 @@ namespace Nop.Plugin.DiscountRules.PurchasedAllProducts.Controllers
                 {
                     DiscountRequirementRuleSystemName = "DiscountRequirement.PurchasedAllProducts"
                 };
+
                 discount.DiscountRequirements.Add(discountRequirement);
                 _discountService.UpdateDiscount(discount);
                 
                 _settingService.SetSetting(string.Format("DiscountRequirement.RestrictedProductVariantIds-{0}", discountRequirement.Id), variantIds);
             }
+
             return Json(new { Result = true, NewRequirementId = discountRequirement.Id }, JsonRequestBehavior.AllowGet);
         }
-        
+
+        #endregion
     }
 }
