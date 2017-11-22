@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
+using Microsoft.AspNetCore.Mvc.Routing;
 using Nop.Core.Data;
 using Nop.Core.Domain.Orders;
 using Nop.Core.Plugins;
@@ -16,16 +19,22 @@ namespace Nop.Plugin.DiscountRules.PurchasedAllProducts
 
         private readonly ISettingService _settingService;
         private readonly IRepository<OrderItem> _orderItemRepository;
+        private readonly IActionContextAccessor _actionContextAccessor;
+        private readonly IUrlHelperFactory _urlHelperFactory;
 
         #endregion
 
         #region Ctor
 
         public PurchasedAllProductsDiscountRequirementRule(ISettingService settingService, 
-            IRepository<OrderItem> orderItemRepository)
+            IRepository<OrderItem> orderItemRepository,
+            IActionContextAccessor actionContextAccessor,
+            IUrlHelperFactory urlHelperFactory)
         {
             this._settingService = settingService;
             this._orderItemRepository = orderItemRepository;
+            this._actionContextAccessor = actionContextAccessor;
+            this._urlHelperFactory = urlHelperFactory;
         }
 
         #endregion
@@ -40,14 +49,14 @@ namespace Nop.Plugin.DiscountRules.PurchasedAllProducts
         public DiscountRequirementValidationResult CheckRequirement(DiscountRequirementValidationRequest request)
         {
             if (request == null)
-                throw new ArgumentNullException("request");
+                throw new ArgumentNullException(nameof(request));
 
             //invalid by default
             var result = new DiscountRequirementValidationResult();
 
-            var restrictedProductVariantIdsStr = _settingService.GetSettingByKey<string>(string.Format("DiscountRequirement.RestrictedProductVariantIds-{0}", request.DiscountRequirementId));
+            var restrictedProductVariantIdsStr = _settingService.GetSettingByKey<string>($"DiscountRequirement.RestrictedProductVariantIds-{request.DiscountRequirementId}");
 
-            if (String.IsNullOrWhiteSpace(restrictedProductVariantIdsStr))
+            if (string.IsNullOrWhiteSpace(restrictedProductVariantIdsStr))
             {
                 result.IsValid = true;
                 return result;
@@ -56,12 +65,12 @@ namespace Nop.Plugin.DiscountRules.PurchasedAllProducts
             if (request.Customer == null)
                 return result;
 
-            var restrictedProductIds = new List<int>();
+            List<int> restrictedProductIds;
 
             try
             {
                 restrictedProductIds = restrictedProductVariantIdsStr
-                    .Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                    .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
                     .Select(x => Convert.ToInt32(x))
                     .ToList();
             }
@@ -75,11 +84,11 @@ namespace Nop.Plugin.DiscountRules.PurchasedAllProducts
                 return result;
 
             var customerId = request.Customer.Id;
-            var orderStatusId = (int)OrderStatus.Complete;
+            const int orderStatusId = (int)OrderStatus.Complete;
             //purchased product
             var purchasedProducts = _orderItemRepository.Table.Where(oi => oi.Order.CustomerId == customerId && !oi.Order.Deleted && oi.Order.OrderStatusId == orderStatusId).ToList();
 
-            bool allFound = restrictedProductIds
+            var allFound = restrictedProductIds
                 .Select(restrictedProductId => purchasedProducts.Any(purchasedProduct => restrictedProductId == purchasedProduct.ProductId))
                 .All(found1 => found1);
 
@@ -100,13 +109,9 @@ namespace Nop.Plugin.DiscountRules.PurchasedAllProducts
         /// <returns>URL</returns>
         public string GetConfigurationUrl(int discountId, int? discountRequirementId)
         {
-            //configured in RouteProvider.cs
-            string result = "Plugins/DiscountRulesPurchasedAllProducts/Configure/?discountId=" + discountId;
-
-            if (discountRequirementId.HasValue)
-                result += string.Format("&discountRequirementId={0}", discountRequirementId.Value);
-
-            return result;
+            var urlHelper = _urlHelperFactory.GetUrlHelper(_actionContextAccessor.ActionContext);
+            return urlHelper.Action("Configure", "DiscountRulesPurchasedAllProducts",
+                new { discountId = discountId, discountRequirementId = discountRequirementId }).TrimStart('/');
         }
 
         /// <summary>
