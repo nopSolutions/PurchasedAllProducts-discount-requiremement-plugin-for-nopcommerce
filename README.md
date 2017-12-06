@@ -1,6 +1,6 @@
 ﻿nopCommerce "Had purchased all of these products" discount requirement plugin
 ===========
 
-nopCommerce site: [http://www.nopcommerce.com](http://www.nopcommerce.com)
+nopCommerce site: [https://www.nopcommerce.com](https://www.nopcommerce.com)
 
-Listing on nopCommerce "extensions and themes" catalog: [http://www.nopcommerce.com/p/982/had-purchased-all-of-these-products-discount-requirement-rule.aspx](http://www.nopcommerce.com/p/982/had-purchased-all-of-these-products-discount-requirement-rule.aspx)
+Listing on nopCommerce "extensions and themes" catalog: [https://www.nopcommerce.com/p/982/had-purchased-all-of-these-products-discount-requirement-rule.aspx](https://www.nopcommerce.com/p/982/had-purchased-all-of-these-products-discount-requirement-rule.aspx)
