@@ -1,12 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net461</TargetFramework>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
     <Copyright>Copyright © Nop Solutions, Ltd</Copyright> 
     <Company>Nop Solutions, Ltd</Company> 
     <Authors>Nop Solutions, Ltd</Authors> 
-    <Version>1.30</Version> 
-    <Description>This plugin allows to set discounts for customers who have purchased  all of the required products</Description> 
     <PackageLicenseUrl></PackageLicenseUrl> 
     <PackageProjectUrl>http://www.nopcommerce.com/p/982/had-purchased-all-of-these-products-discount-requirement-rule.aspx</PackageProjectUrl> 
     <RepositoryUrl>https://github.com/nopSolutions/PurchasedAllProducts-discount-requiremement-plugin-for-nopcommerce</RepositoryUrl> 
