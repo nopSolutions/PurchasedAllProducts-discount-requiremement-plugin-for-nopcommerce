@@ -2,12 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using Nop.Core;
-using Nop.Core.Domain.Catalog;
 using Nop.Core.Domain.Discounts;
 using Nop.Plugin.DiscountRules.PurchasedAllProducts.Models;
-using Nop.Services;
 using Nop.Services.Catalog;
 using Nop.Services.Configuration;
 using Nop.Services.Discounts;
@@ -15,9 +12,10 @@ using Nop.Services.Localization;
 using Nop.Services.Security;
 using Nop.Services.Stores;
 using Nop.Services.Vendors;
+using Nop.Web.Areas.Admin.Factories;
+using Nop.Web.Areas.Admin.Models.Catalog;
 using Nop.Web.Framework;
 using Nop.Web.Framework.Controllers;
-using Nop.Web.Framework.Kendoui;
 using Nop.Web.Framework.Mvc.Filters;
 
 namespace Nop.Plugin.DiscountRules.PurchasedAllProducts.Controllers
@@ -28,42 +26,45 @@ namespace Nop.Plugin.DiscountRules.PurchasedAllProducts.Controllers
     {
         #region Fields
 
-        private readonly IDiscountService _discountService;
-        private readonly ISettingService _settingService;
-        private readonly IPermissionService _permissionService;
-        private readonly IWorkContext _workContext;
-        private readonly ILocalizationService _localizationService;
         private readonly ICategoryService _categoryService;
+        private readonly IDiscountService _discountService;
+        private readonly ILocalizationService _localizationService;
         private readonly IManufacturerService _manufacturerService;
+        private readonly IPermissionService _permissionService;
+        private readonly IProductModelFactory _productModelFactory;
+        private readonly IProductService _productService;
+        private readonly ISettingService _settingService;
         private readonly IStoreService _storeService;
         private readonly IVendorService _vendorService;
-        private readonly IProductService _productService;
+        private readonly IWorkContext _workContext;
 
         #endregion
 
         #region Ctor
 
-        public DiscountRulesPurchasedAllProductsController(IDiscountService discountService,
-            ISettingService settingService,
-            IPermissionService permissionService,
-            IWorkContext workContext,
+        public DiscountRulesPurchasedAllProductsController(ICategoryService categoryService,
+            IDiscountService discountService,
             ILocalizationService localizationService,
-            ICategoryService categoryService,
             IManufacturerService manufacturerService,
+            IPermissionService permissionService,
+            IProductModelFactory productModelFactory,
+            IProductService productService,
+            ISettingService settingService,
             IStoreService storeService,
             IVendorService vendorService,
-            IProductService productService)
+            IWorkContext workContext)
         {
-            this._discountService = discountService;
-            this._settingService = settingService;
-            this._permissionService = permissionService;
-            this._workContext = workContext;
-            this._localizationService = localizationService;
-            this._categoryService = categoryService;
-            this._manufacturerService = manufacturerService;
-            this._storeService = storeService;
-            this._vendorService = vendorService;
-            this._productService = productService;
+            _categoryService = categoryService;
+            _discountService = discountService;
+            _localizationService = localizationService;
+            _manufacturerService = manufacturerService;
+            _permissionService = permissionService;
+            _productModelFactory = productModelFactory;
+            _productService = productService;
+            _settingService = settingService;
+            _storeService = storeService;
+            _vendorService = vendorService;
+            _workContext = workContext;
         }
 
         #endregion
@@ -135,7 +136,7 @@ namespace Nop.Plugin.DiscountRules.PurchasedAllProducts.Controllers
 
                 discount.DiscountRequirements.Add(discountRequirement);
                 _discountService.UpdateDiscount(discount);
-                
+
                 _settingService.SetSetting($"DiscountRequirement.RestrictedProductVariantIds-{discountRequirement.Id}", variantIds);
             }
 
@@ -145,81 +146,15 @@ namespace Nop.Plugin.DiscountRules.PurchasedAllProducts.Controllers
         public IActionResult ProductAddPopup(string btnId, string productIdsInput)
         {
             if (!_permissionService.Authorize(StandardPermissionProvider.ManageProducts))
-                return Content("Access denied");
+                return AccessDeniedView();
 
-            var model = new RequirementModel.AddProductModel
-            {
-                //a vendor should have access only to his products
-                IsLoggedInAsVendor = _workContext.CurrentVendor != null
-            };
-
-            //categories
-            model.AvailableCategories.Add(new SelectListItem { Text = _localizationService.GetResource("Admin.Common.All"), Value = "0" });
-            var categories = _categoryService.GetAllCategories(showHidden: true);
-            foreach (var c in categories)
-                model.AvailableCategories.Add(new SelectListItem { Text = _categoryService.GetFormattedBreadCrumb(c), Value = c.Id.ToString() });
-
-            //manufacturers
-            model.AvailableManufacturers.Add(new SelectListItem { Text = _localizationService.GetResource("Admin.Common.All"), Value = "0" });
-            foreach (var m in _manufacturerService.GetAllManufacturers(showHidden: true))
-                model.AvailableManufacturers.Add(new SelectListItem { Text = m.Name, Value = m.Id.ToString() });
-
-            //stores
-            model.AvailableStores.Add(new SelectListItem { Text = _localizationService.GetResource("Admin.Common.All"), Value = "0" });
-            foreach (var s in _storeService.GetAllStores())
-                model.AvailableStores.Add(new SelectListItem { Text = s.Name, Value = s.Id.ToString() });
-
-            //vendors
-            model.AvailableVendors.Add(new SelectListItem { Text = _localizationService.GetResource("Admin.Common.All"), Value = "0" });
-            foreach (var v in _vendorService.GetAllVendors(showHidden: true))
-                model.AvailableVendors.Add(new SelectListItem { Text = v.Name, Value = v.Id.ToString() });
-
-            //product types
-            model.AvailableProductTypes = ProductType.SimpleProduct.ToSelectList(false).ToList();
-            model.AvailableProductTypes.Insert(0, new SelectListItem { Text = _localizationService.GetResource("Admin.Common.All"), Value = "0" });
-            
             ViewBag.productIdsInput = productIdsInput;
             ViewBag.btnId = btnId;
 
+            //prepare model
+            var model = _productModelFactory.PrepareProductSearchModel(new ProductSearchModel());
+
             return View("~/Plugins/DiscountRules.PurchasedAllProducts/Views/ProductAddPopup.cshtml", model);
-        }
-
-        [HttpPost]
-        [AdminAntiForgery]
-        public IActionResult ProductAddPopupList(DataSourceRequest command, RequirementModel.AddProductModel model)
-        {
-            if (!_permissionService.Authorize(StandardPermissionProvider.ManageProducts))
-                return ErrorForKendoGridJson("Access denied");
-
-            //a vendor should have access only to his products
-            if (_workContext.CurrentVendor != null)
-            {
-                model.SearchVendorId = _workContext.CurrentVendor.Id;
-            }
-
-            var products = _productService.SearchProducts(
-                categoryIds: new List<int> { model.SearchCategoryId },
-                manufacturerId: model.SearchManufacturerId,
-                storeId: model.SearchStoreId,
-                vendorId: model.SearchVendorId,
-                productType: model.SearchProductTypeId > 0 ? (ProductType?)model.SearchProductTypeId : null,
-                keywords: model.SearchProductName,
-                pageIndex: command.Page - 1,
-                pageSize: command.PageSize,
-                showHidden: true
-                );
-            var gridModel = new DataSourceResult
-            {
-                Data = products.Select(x => new RequirementModel.ProductModel
-                {
-                    Id = x.Id,
-                    Name = x.Name,
-                    Published = x.Published
-                }),
-                Total = products.TotalCount
-            };
-
-            return Json(gridModel);
         }
 
         [HttpPost]
@@ -232,7 +167,7 @@ namespace Nop.Plugin.DiscountRules.PurchasedAllProducts.Controllers
                 return Json(new { Text = result });
 
             if (string.IsNullOrWhiteSpace(productIds))
-                return Json(new {Text = result});
+                return Json(new { Text = result });
 
             var ids = new List<int>();
             var idsArray = productIds
@@ -242,7 +177,7 @@ namespace Nop.Plugin.DiscountRules.PurchasedAllProducts.Controllers
 
             foreach (var str1 in idsArray)
             {
-                if (int.TryParse(str1, out int tmp1))
+                if (int.TryParse(str1, out var tmp1))
                     ids.Add(tmp1);
             }
 

@@ -22,7 +22,7 @@
                 type: "POST",
                 url: "@(Url.Action("Configure", "DiscountRulesPurchasedAllProducts"))",
                 data: postData,
-                success: function (data) {
+                success: function (data, textStatus, jqXHR) {
                     $('#pnl-save-requirement-result@(Model.RequirementId)').fadeIn("slow").delay(1000).fadeOut("slow");
                     //notify parent if it's a new requirement
                     @if (Model.RequirementId == 0)
@@ -30,8 +30,8 @@
                             <text>$("#discountRequirementContainer").trigger('nopnewdiscountruleadded', [data.NewRequirementId]);</text>
                          }
                 },
-                error:function (xhr, ajaxOptions, thrownError){
-                    alert('@Html.Raw(JavaScriptEncoder.Default.Encode(T("Admin.Promotions.Discounts.Requirements.FailedToSave").Text))');
+                error: function (jqXHR, textStatus, errorThrown){
+                    $("#savePurchasedAllProductsrequirementAlert").click();
                 }
             });
         });
@@ -72,6 +72,7 @@
         </div>
     </div>
 </div>
+<nop-alert asp-alert-id="savePurchasedAllProductsrequirementAlert" asp-alert-message="@T("Admin.Promotions.Discounts.Requirements.FailedToSave")" />
 
 <script type="text/javascript">
     $(document).ready(function() {
@@ -114,12 +115,12 @@
                 url: '@Url.Action("LoadProductFriendlyNames", "DiscountRulesPurchasedAllProducts")',
                 data: postData,
                 dataType: 'json',
-                success: function(data) {
+                success: function (data, textStatus, jqXHR) {
                     $('#discountrequirement-products-check-progress@(Model.RequirementId)').hide();
                     $('#discountrequirement-product-names@(Model.RequirementId)').text(data.Text);
                     $('#discountrequirement-product-names@(Model.RequirementId)').addClass('filled');
                 },
-                failure: function() {
+                error: function (jqXHR, textStatus, errorThrown) {
                     $('#discountrequirement-products-check-progress@(Model.RequirementId)').hide();
                     $('#discountrequirement-product-names@(Model.RequirementId)').text('');
                     $('#discountrequirement-product-names@(Model.RequirementId)').removeClass('filled');
