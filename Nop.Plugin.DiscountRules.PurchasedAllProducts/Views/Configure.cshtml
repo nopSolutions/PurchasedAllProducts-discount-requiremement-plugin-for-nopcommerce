@@ -6,14 +6,14 @@
 <script type="text/javascript">
     $(document).ready(function () {
         $('#savePurchasedAllProductsrequirement@(Model.RequirementId)').click(function () {
-            var variantIds = $("#@Html.IdFor(model => model.Products)").val();
+            var variantIds = $("#@Html.IdFor(model => model.ProductIds)").val();
             var discountId = @Model.DiscountId;
             var requirementId = @Model.RequirementId;
 
             var postData = {
-                discountId: discountId,
-                discountRequirementId: requirementId,
-                variantIds: variantIds
+                DiscountId: discountId,
+                RequirementId: requirementId,
+                ProductIds: variantIds
             };
             addAntiForgeryToken(postData);
 
@@ -31,6 +31,21 @@
                     }
                 },
                 error: function (jqXHR, textStatus, errorThrown){
+                    var $alertInfoEl = $("#savePurchasedAllProductsrequirementAlert-info");
+                    let response = jqXHR.responseJSON;
+                    if (response instanceof Object && response.hasOwnProperty('Errors')) {
+                        var errorMessages = '';
+                        $.each(response.Errors, function (i, error) {
+                            errorMessages += error;
+                            if (response.Errors.length - 1 != i)
+                                errorMessages += '</br>';
+                        });
+                        $alertInfoEl.html(errorMessages);
+                    } else {
+                        // display default error
+                        $alertInfoEl.html('@T("Admin.Promotions.Discounts.Requirements.FailedToSave")');
+                    }
+
                     $("#savePurchasedAllProductsrequirementAlert").click();
                 }
             });
@@ -40,17 +55,17 @@
 
 <div class="form-group">
     <div class="col-md-3 requirement-label-col">
-        <nop-label asp-for="Products" />
+        <nop-label asp-for="ProductIds" />
     </div>
     <div class="col-md-9 requirement-data-col">
         <div class="requirement-data-input">
             <div class="input-group">
-                <nop-editor asp-for="Products" />
+                <nop-editor asp-for="ProductIds" />
                 <div class="input-group-btn">
                     <input type="submit"
                            id="btnAddNewDiscountRequirementProduct@(Model.RequirementId)"
                            value="@T("Plugins.DiscountRules.PurchasedAllProducts.Fields.Products.AddNew")"
-                           onclick="javascript:OpenWindow('@Url.Action("ProductAddPopup", "DiscountRulesPurchasedAllProducts", new {btnId = $"btnRefreshDiscountRequirementProducts{Model.RequirementId}", productIdsInput = Html.IdFor(model => model.Products)})', 800, 850, true); return false;"
+                           onclick="javascript:OpenWindow('@Url.Action("ProductAddPopup", "DiscountRulesPurchasedAllProducts", new {btnId = $"btnRefreshDiscountRequirementProducts{Model.RequirementId}", productIdsInput = Html.IdFor(model => model.ProductIds)})', 800, 850, true); return false;"
                            class="btn btn-info" />
                     <input type="submit" id="btnRefreshDiscountRequirementProducts@(Model.RequirementId)" style="display: none" />
                 </div>
@@ -72,7 +87,7 @@
         </div>
     </div>
 </div>
-<nop-alert asp-alert-id="savePurchasedAllProductsrequirementAlert" asp-alert-message="@T("Admin.Promotions.Discounts.Requirements.FailedToSave")" />
+<nop-alert asp-alert-id="savePurchasedAllProductsrequirementAlert" />
 
 <script type="text/javascript">
     $(document).ready(function() {
@@ -89,7 +104,7 @@
         loadDiscountRequirementProductFriendlyNames@(Model.RequirementId)();
     });
     $(document).ready(function() {
-        $('#@Html.IdFor(model => model.Products)')
+        $('#@Html.IdFor(model => model.ProductIds)')
             .data('timeout', null)
             .keyup(function() {
                 clearTimeout($(this).data('timeout'));
@@ -99,7 +114,7 @@
     });
 
     function loadDiscountRequirementProductFriendlyNames@(Model.RequirementId)() {
-        var inputValue = $('#@Html.IdFor(model => model.Products)').val();
+        var inputValue = $('#@Html.IdFor(model => model.ProductIds)').val();
         if (inputValue) {
             //load friendly names
             $('#discountrequirement-products-check-progress@(Model.RequirementId)').show();
