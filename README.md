@@ -3,4 +3,4 @@
 
 nopCommerce site: [https://www.nopcommerce.com](https://www.nopcommerce.com)
 
-Listing on nopCommerce "extensions and themes" catalog: [https://www.nopcommerce.com/p/982/had-purchased-all-of-these-products-discount-requirement-rule.aspx](https://www.nopcommerce.com/p/982/had-purchased-all-of-these-products-discount-requirement-rule.aspx)
+Listing on nopCommerce "extensions and themes" catalog: [https://www.nopcommerce.com/had-purchased-all-of-these-products-discount-rule](https://www.nopcommerce.com/had-purchased-all-of-these-products-discount-rule)
