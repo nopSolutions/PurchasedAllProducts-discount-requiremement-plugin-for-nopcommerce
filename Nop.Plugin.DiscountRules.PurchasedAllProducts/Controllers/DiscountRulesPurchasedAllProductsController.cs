@@ -64,7 +64,7 @@ namespace Nop.Plugin.DiscountRules.PurchasedAllProducts.Controllers
             if (discountRequirementId.HasValue && _discountService.GetDiscountRequirementById(discountRequirementId.Value) is null)
                 return Content("Failed to load requirement.");
 
-            var restrictedProductVariantIds = _settingService.GetSettingByKey<string>(string.Format(DiscountRequirementDefaults.SettingsKey, discountRequirementId ?? 0));
+            var restrictedProductVariantIds = _settingService.GetSettingByKey<string>(string.Format(DiscountRequirementDefaults.SETTINGS_KEY, discountRequirementId ?? 0));
 
             var model = new RequirementModel
             {
@@ -74,7 +74,7 @@ namespace Nop.Plugin.DiscountRules.PurchasedAllProducts.Controllers
             };
 
             //add a prefix
-            ViewData.TemplateInfo.HtmlFieldPrefix = string.Format(DiscountRequirementDefaults.HtmlFieldPrefix, discountRequirementId ?? 0);
+            ViewData.TemplateInfo.HtmlFieldPrefix = string.Format(DiscountRequirementDefaults.HTML_FIELD_PREFIX, discountRequirementId ?? 0);
 
             return View("~/Plugins/DiscountRules.PurchasedAllProducts/Views/Configure.cshtml", model);
         }
@@ -101,14 +101,14 @@ namespace Nop.Plugin.DiscountRules.PurchasedAllProducts.Controllers
                     discountRequirement = new DiscountRequirement
                     {
                         DiscountId = discount.Id,
-                        DiscountRequirementRuleSystemName = DiscountRequirementDefaults.SystemName
+                        DiscountRequirementRuleSystemName = DiscountRequirementDefaults.SYSTEM_NAME
                     };
 
                     _discountService.InsertDiscountRequirement(discountRequirement);
                 }
 
                 //save restricted customer role identifier
-                _settingService.SetSetting(string.Format(DiscountRequirementDefaults.SettingsKey, discountRequirement.Id), model.ProductIds);
+                _settingService.SetSetting(string.Format(DiscountRequirementDefaults.SETTINGS_KEY, discountRequirement.Id), model.ProductIds);
 
                 return Ok(new { NewRequirementId = discountRequirement.Id });
             }
@@ -154,12 +154,7 @@ namespace Nop.Plugin.DiscountRules.PurchasedAllProducts.Controllers
             }
 
             var products = _productService.GetProductsByIds(ids.ToArray());
-            for (var i = 0; i <= products.Count - 1; i++)
-            {
-                result += products[i].Name;
-                if (i != products.Count - 1)
-                    result += ", ";
-            }
+            result = string.Join(", ", products.Select(p => p.Name));
 
             return Json(new { Text = result });
         }

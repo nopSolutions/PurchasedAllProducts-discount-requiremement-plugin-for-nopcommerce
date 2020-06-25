@@ -8,16 +8,16 @@
         /// <summary>
         /// The system name of the discount requirement rule
         /// </summary>
-        public const string SystemName = "DiscountRequirement.PurchasedAllProducts";
+        public const string SYSTEM_NAME = "DiscountRequirement.PurchasedAllProducts";
 
         /// <summary>
         /// The key of the settings to save restricted products
         /// </summary>
-        public const string SettingsKey = "DiscountRequirement.RestrictedProductVariantIds-{0}";
+        public const string SETTINGS_KEY = "DiscountRequirement.RestrictedProductVariantIds-{0}";
 
         /// <summary>
         /// The HTML field prefix for discount requirements
         /// </summary>
-        public const string HtmlFieldPrefix = "DiscountRulesPurchasedAllProducts{0}";
+        public const string HTML_FIELD_PREFIX = "DiscountRulesPurchasedAllProducts{0}";
     }
 }
