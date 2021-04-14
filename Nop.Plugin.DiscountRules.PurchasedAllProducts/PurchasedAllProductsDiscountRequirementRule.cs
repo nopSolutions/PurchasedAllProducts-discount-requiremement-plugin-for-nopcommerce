@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.Mvc.Routing;
@@ -59,8 +60,11 @@ namespace Nop.Plugin.DiscountRules.PurchasedAllProducts
         /// Check discount requirement
         /// </summary>
         /// <param name="request">Object that contains all information required to check the requirement (Current customer, discount, etc)</param>
-        /// <returns>Result</returns>
-        public DiscountRequirementValidationResult CheckRequirement(DiscountRequirementValidationRequest request)
+        /// <returns>
+        /// A task that represents the asynchronous operation
+        /// The task result contains the result
+        /// </returns>
+        public async Task<DiscountRequirementValidationResult> CheckRequirementAsync(DiscountRequirementValidationRequest request)
         {
             if (request == null)
                 throw new ArgumentNullException(nameof(request));
@@ -68,7 +72,7 @@ namespace Nop.Plugin.DiscountRules.PurchasedAllProducts
             //invalid by default
             var result = new DiscountRequirementValidationResult();
 
-            var restrictedProductVariantIdsStr = _settingService.GetSettingByKey<string>(string.Format(DiscountRequirementDefaults.SETTINGS_KEY, request.DiscountRequirementId));
+            var restrictedProductVariantIdsStr = await _settingService.GetSettingByKeyAsync<string>(string.Format(DiscountRequirementDefaults.SETTINGS_KEY, request.DiscountRequirementId));
 
             if (string.IsNullOrWhiteSpace(restrictedProductVariantIdsStr))
             {
@@ -100,18 +104,17 @@ namespace Nop.Plugin.DiscountRules.PurchasedAllProducts
             var customerId = request.Customer.Id;
 
             //get available orders
-            var availableOrders = _orderService.SearchOrders(
+            var availableOrders = await _orderService.SearchOrdersAsync(
                 customerId: customerId,
                 osIds: new List<int> { (int)OrderStatus.Complete });
 
             //get all available purchased product ids
-            var purchasedProductIds = availableOrders
-                .SelectMany(order => _orderService.GetOrderItems(order.Id))
-                .Where(orderItem =>
+            var purchasedProductIds = await availableOrders
+                .SelectManyAwait(async order => await _orderService.GetOrderItemsAsync(order.Id))
+                .WhereAwait(async orderItem =>
                 {
                     //exclude products from return requests
-                    var returnRequests = _returnRequestService
-                        .SearchReturnRequests(customerId: customerId, orderItemId: orderItem.Id)
+                    var returnRequests = (await _returnRequestService.SearchReturnRequestsAsync(customerId: customerId, orderItemId: orderItem.Id))
                         .Where(returnRequest => returnRequest.ReturnRequestStatus != ReturnRequestStatus.Cancelled &&
                                                   returnRequest.ReturnRequestStatus != ReturnRequestStatus.RequestRejected &&
                                                     returnRequest.ReturnRequestStatus != ReturnRequestStatus.ItemsRepaired);
@@ -122,7 +125,8 @@ namespace Nop.Plugin.DiscountRules.PurchasedAllProducts
                     return returnedQuantity < orderItem.Quantity;
                 })
                 .Select(orderItem => orderItem.ProductId)
-                .Distinct();
+                .Distinct()
+                .ToListAsync();
 
             //check if all purchased products are match the restricted products
             result.IsValid = restrictedProductIds
@@ -142,16 +146,17 @@ namespace Nop.Plugin.DiscountRules.PurchasedAllProducts
             var urlHelper = _urlHelperFactory.GetUrlHelper(_actionContextAccessor.ActionContext);
 
             return urlHelper.Action("Configure", "DiscountRulesPurchasedAllProducts",
-                new { discountId = discountId, discountRequirementId = discountRequirementId }, _webHelper.CurrentRequestProtocol);
+                new { discountId = discountId, discountRequirementId = discountRequirementId }, _webHelper.GetCurrentRequestProtocol());
         }
 
         /// <summary>
-        /// Install plugin
+        /// Install the plugin
         /// </summary>
-        public override void Install()
+        /// <returns>A task that represents the asynchronous operation</returns>
+        public override async Task InstallAsync()
         {
             //locales
-            _localizationService.AddPluginLocaleResource(new Dictionary<string, string>
+            await _localizationService.AddLocaleResourceAsync(new Dictionary<string, string>
             {
                 ["Plugins.DiscountRules.PurchasedAllProducts.Fields.Products"] = "Restricted products",
                 ["Plugins.DiscountRules.PurchasedAllProducts.Fields.Products.Hint"] = "The comma-separated list of product identifiers (e.g. 77, 123, 156). You can find a product ID on its details page.",
@@ -162,26 +167,27 @@ namespace Nop.Plugin.DiscountRules.PurchasedAllProducts
                 ["Plugins.DiscountRules.PurchasedAllProducts.Fields.ProductIds.InvalidFormat"] = "Invalid format of the products selection. Format should be comma-separated list of product identifiers (e.g. 77, 123, 156). You can find a product ID on its details page."
             });
 
-            base.Install();
+            await base.InstallAsync();
         }
 
         /// <summary>
-        /// Uninstall plugin
+        /// Uninstall the plugin
         /// </summary>
-        public override void Uninstall()
+        /// <returns>A task that represents the asynchronous operation</returns>
+        public override async Task UninstallAsync()
         {
             //discount requirements
-            var discountRequirements = _discountService.GetAllDiscountRequirements()
+            var discountRequirements = (await _discountService.GetAllDiscountRequirementsAsync())
                 .Where(discountRequirement => discountRequirement.DiscountRequirementRuleSystemName == DiscountRequirementDefaults.SYSTEM_NAME);
             foreach (var discountRequirement in discountRequirements)
             {
-                _discountService.DeleteDiscountRequirement(discountRequirement, false);
+                await _discountService.DeleteDiscountRequirementAsync(discountRequirement, false);
             }
 
             //locales
-            _localizationService.DeletePluginLocaleResources("Plugins.DiscountRules.PurchasedAllProducts");
+            await _localizationService.DeleteLocaleResourcesAsync("Plugins.DiscountRules.PurchasedAllProducts");
 
-            base.Uninstall();
+            await base.UninstallAsync();
         }
 
         #endregion

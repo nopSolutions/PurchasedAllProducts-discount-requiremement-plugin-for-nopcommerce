@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Nop.Core.Domain.Discounts;
 using Nop.Plugin.DiscountRules.PurchasedAllProducts.Models;
@@ -50,21 +51,21 @@ namespace Nop.Plugin.DiscountRules.PurchasedAllProducts.Controllers
 
         #region Methods
 
-        public IActionResult Configure(int discountId, int? discountRequirementId)
+        public async Task<IActionResult> Configure(int discountId, int? discountRequirementId)
         {
-            if (!_permissionService.Authorize(StandardPermissionProvider.ManageDiscounts))
+            if (!await _permissionService.AuthorizeAsync(StandardPermissionProvider.ManageDiscounts))
                 return Content("Access denied");
 
-            var discount = _discountService.GetDiscountById(discountId);
+            var discount = await _discountService.GetDiscountByIdAsync(discountId);
 
             if (discount == null)
                 throw new ArgumentException("Discount could not be loaded");
 
             //check whether the discount requirement exists
-            if (discountRequirementId.HasValue && _discountService.GetDiscountRequirementById(discountRequirementId.Value) is null)
+            if (discountRequirementId.HasValue && await _discountService.GetDiscountRequirementByIdAsync(discountRequirementId.Value) is null)
                 return Content("Failed to load requirement.");
 
-            var restrictedProductVariantIds = _settingService.GetSettingByKey<string>(string.Format(DiscountRequirementDefaults.SETTINGS_KEY, discountRequirementId ?? 0));
+            var restrictedProductVariantIds = await _settingService.GetSettingByKeyAsync<string>(string.Format(DiscountRequirementDefaults.SETTINGS_KEY, discountRequirementId ?? 0));
 
             var model = new RequirementModel
             {
@@ -80,20 +81,20 @@ namespace Nop.Plugin.DiscountRules.PurchasedAllProducts.Controllers
         }
 
         [HttpPost]
-        public IActionResult Configure(RequirementModel model)
+        public async Task<IActionResult> Configure(RequirementModel model)
         {
-            if (!_permissionService.Authorize(StandardPermissionProvider.ManageDiscounts))
+            if (!await _permissionService.AuthorizeAsync(StandardPermissionProvider.ManageDiscounts))
                 return Content("Access denied");
 
             if (ModelState.IsValid)
             {
                 //load the discount
-                var discount = _discountService.GetDiscountById(model.DiscountId);
+                var discount = await _discountService.GetDiscountByIdAsync(model.DiscountId);
                 if (discount == null)
                     return NotFound(new { Errors = new[] { "Discount could not be loaded" } });
 
                 //get the discount requirement
-                var discountRequirement = _discountService.GetDiscountRequirementById(model.RequirementId);
+                var discountRequirement = await _discountService.GetDiscountRequirementByIdAsync(model.RequirementId);
 
                 //the discount requirement does not exist, so create a new one
                 if (discountRequirement == null)
@@ -104,11 +105,11 @@ namespace Nop.Plugin.DiscountRules.PurchasedAllProducts.Controllers
                         DiscountRequirementRuleSystemName = DiscountRequirementDefaults.SYSTEM_NAME
                     };
 
-                    _discountService.InsertDiscountRequirement(discountRequirement);
+                    await _discountService.InsertDiscountRequirementAsync(discountRequirement);
                 }
 
                 //save restricted customer role identifier
-                _settingService.SetSetting(string.Format(DiscountRequirementDefaults.SETTINGS_KEY, discountRequirement.Id), model.ProductIds);
+                await _settingService.SetSettingAsync(string.Format(DiscountRequirementDefaults.SETTINGS_KEY, discountRequirement.Id), model.ProductIds);
 
                 return Ok(new { NewRequirementId = discountRequirement.Id });
             }
@@ -116,26 +117,26 @@ namespace Nop.Plugin.DiscountRules.PurchasedAllProducts.Controllers
             return BadRequest(new { Errors = GetErrorsFromModelState() });
         }
 
-        public IActionResult ProductAddPopup(string btnId, string productIdsInput)
+        public async Task<IActionResult> ProductAddPopup(string btnId, string productIdsInput)
         {
-            if (!_permissionService.Authorize(StandardPermissionProvider.ManageProducts))
+            if (!await _permissionService.AuthorizeAsync(StandardPermissionProvider.ManageProducts))
                 return AccessDeniedView();
 
             ViewBag.productIdsInput = productIdsInput;
             ViewBag.btnId = btnId;
 
             //prepare model
-            var model = _productModelFactory.PrepareProductSearchModel(new ProductSearchModel());
+            var model = await _productModelFactory.PrepareProductSearchModelAsync(new ProductSearchModel());
 
             return View("~/Plugins/DiscountRules.PurchasedAllProducts/Views/ProductAddPopup.cshtml", model);
         }
 
         [HttpPost]
-        public IActionResult LoadProductFriendlyNames(string productIds)
+        public async Task<IActionResult> LoadProductFriendlyNames(string productIds)
         {
             var result = "";
 
-            if (!_permissionService.Authorize(StandardPermissionProvider.ManageProducts))
+            if (!await _permissionService.AuthorizeAsync(StandardPermissionProvider.ManageProducts))
                 return Json(new { Text = result });
 
             if (string.IsNullOrWhiteSpace(productIds))
@@ -153,7 +154,7 @@ namespace Nop.Plugin.DiscountRules.PurchasedAllProducts.Controllers
                     ids.Add(tmp1);
             }
 
-            var products = _productService.GetProductsByIds(ids.ToArray());
+            var products = await _productService.GetProductsByIdsAsync(ids.ToArray());
             result = string.Join(", ", products.Select(p => p.Name));
 
             return Json(new { Text = result });
