@@ -156,7 +156,7 @@ namespace Nop.Plugin.DiscountRules.PurchasedAllProducts
         public override async Task InstallAsync()
         {
             //locales
-            await _localizationService.AddLocaleResourceAsync(new Dictionary<string, string>
+            await _localizationService.AddOrUpdateLocaleResourceAsync(new Dictionary<string, string>
             {
                 ["Plugins.DiscountRules.PurchasedAllProducts.Fields.Products"] = "Restricted products",
                 ["Plugins.DiscountRules.PurchasedAllProducts.Fields.Products.Hint"] = "The comma-separated list of product identifiers (e.g. 77, 123, 156). You can find a product ID on its details page.",
