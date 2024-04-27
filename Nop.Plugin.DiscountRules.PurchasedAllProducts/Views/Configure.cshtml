@@ -4,8 +4,8 @@
 @model Nop.Plugin.DiscountRules.PurchasedAllProducts.Models.RequirementModel
 
 <script type="text/javascript">
-    $(document).ready(function () {
-        $('#savePurchasedAllProductsrequirement@(Model.RequirementId)').click(function () {
+    $(function () {
+        $('#savePurchasedAllProductsrequirement@(Model.RequirementId)').on("click", function() {
             var variantIds = $("#@Html.IdFor(model => model.ProductIds)").val();
             var discountId = @Model.DiscountId;
             var requirementId = @Model.RequirementId;
@@ -46,7 +46,7 @@
                         $alertInfoEl.html('@T("Admin.Promotions.Discounts.Requirements.FailedToSave")');
                     }
 
-                    $("#savePurchasedAllProductsrequirementAlert").click();
+                    $("#savePurchasedAllProductsrequirementAlert").trigger("click");
                 }
             });
         });
@@ -90,8 +90,8 @@
 <nop-alert asp-alert-id="savePurchasedAllProductsrequirementAlert" />
 
 <script type="text/javascript">
-    $(document).ready(function() {
-        $('#btnRefreshDiscountRequirementProducts@(Model.RequirementId)').click(function() {
+    $(function() {
+        $('#btnRefreshDiscountRequirementProducts@(Model.RequirementId)').on("click", function() {
             //refresh product list
             loadDiscountRequirementProductFriendlyNames@(Model.RequirementId)();
 
@@ -100,10 +100,10 @@
         });
     });
 
-    $(document).ready(function() {
+    $(function() {
         loadDiscountRequirementProductFriendlyNames@(Model.RequirementId)();
     });
-    $(document).ready(function() {
+    $(function() {
         $('#@Html.IdFor(model => model.ProductIds)')
             .data('timeout', null)
             .keyup(function() {
