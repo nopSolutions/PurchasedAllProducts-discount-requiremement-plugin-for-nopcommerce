@@ -15,6 +15,7 @@ public partial class PurchasedAllProductsDiscountRequirementRule : BasePlugin, I
 {
     #region Fields
 
+    private const char _idSeparator = ',';
     private readonly IActionContextAccessor _actionContextAccessor;
     private readonly IDiscountService _discountService;
     private readonly ILocalizationService _localizationService;
@@ -23,7 +24,6 @@ public partial class PurchasedAllProductsDiscountRequirementRule : BasePlugin, I
     private readonly ISettingService _settingService;
     private readonly IUrlHelperFactory _urlHelperFactory;
     private readonly IWebHelper _webHelper;
-    private static readonly char[] _idSeparator = [','];
 
     #endregion
 
@@ -142,7 +142,7 @@ public partial class PurchasedAllProductsDiscountRequirementRule : BasePlugin, I
         var urlHelper = _urlHelperFactory.GetUrlHelper(_actionContextAccessor.ActionContext);
 
         return urlHelper.Action("Configure", "DiscountRulesPurchasedAllProducts",
-            new { discountId = discountId, discountRequirementId = discountRequirementId }, _webHelper.GetCurrentRequestProtocol());
+            new { discountId, discountRequirementId }, _webHelper.GetCurrentRequestProtocol());
     }
 
     /// <summary>
@@ -175,10 +175,9 @@ public partial class PurchasedAllProductsDiscountRequirementRule : BasePlugin, I
         //discount requirements
         var discountRequirements = (await _discountService.GetAllDiscountRequirementsAsync())
             .Where(discountRequirement => discountRequirement.DiscountRequirementRuleSystemName == DiscountRequirementDefaults.SYSTEM_NAME);
+
         foreach (var discountRequirement in discountRequirements)
-        {
             await _discountService.DeleteDiscountRequirementAsync(discountRequirement, false);
-        }
 
         //locales
         await _localizationService.DeleteLocaleResourcesAsync("Plugins.DiscountRules.PurchasedAllProducts");
